@@ -99,7 +99,7 @@ void checkFan(int temperature, int hot, int fans)
   {
     while (temperature >= hot)
     {
-      // Turn on the 
+      // Turn on the Fans
       RGB_color(255, 0, 0); // Red
       digitalWrite(fans, HIGH);
       break;
