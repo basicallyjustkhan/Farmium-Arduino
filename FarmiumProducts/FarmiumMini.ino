@@ -3,18 +3,20 @@
 
 SoftwareSerial bluetooth(1, 0); // Rx, Tx Pins
 
-const int   dry = 1000.00;  // If the soil is dryer than this number
-const float hot = 25.50;    // If the soil is hotter than this number
-
-const int red_light   = 8;  // R Pin
-const int green_light = 7;  // G Pin
-const int blue_light  = 6;  // B Pin
+const int   dry = 1000.00;  // If the soil is dryer (>=) than this number
+const float cold = 24.00;   // If the soil is colder (<=) than this number
+const float hot = 27.00;    // If the soil is hotter (>=) than this number
 
 const int fc28 = 13;        // FC-28 Pin (Soil Sensor)
 const int buzzer = 12;      // Buzzer Pin
-const int fans = 11;        // Fans Pin
+const int coolingFan = 11;  // Cooling Fan Pin
+const int heatingFan = 10;  // Heating Fan Pin
 const int pump = A0;        // Water Pump Pin
 #define dht22 A1            // DHT22 Pin (Temp Sensor)
+
+const int red_light   = A2;  // R Pin
+const int green_light = A3;  // G Pin
+const int blue_light  = A4;  // B Pin
 
 #define DHTTYPE DHT22       // Defining the type of the sensor
 DHT dht(dht22, DHTTYPE);    // Letting the library know
@@ -23,14 +25,15 @@ DHT dht(dht22, DHTTYPE);    // Letting the library know
 void setup() 
 {
   // Setting the Pin modes
+  pinMode(fc28, INPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(coolingFan, OUTPUT);
+  pinMode(heatingFan, OUTPUT);
+  pinMode(pump, OUTPUT);
+  pinMode(dht22, INPUT);
   pinMode(red_light, OUTPUT);
   pinMode(green_light, OUTPUT);
   pinMode(blue_light, OUTPUT);
-  pinMode(pump, OUTPUT);
-  pinMode(fans, OUTPUT);
-  pinMode(buzzer, OUTPUT);
-  pinMode(fc28, INPUT);
-  pinMode(dht22, INPUT);
   
   // Setting Initial Values
   digitalWrite(pump, HIGH); // Relay
@@ -59,9 +62,9 @@ void loop()
   delay(1000);  // Delay between readings due to the Bluetooth Module
   
   // Controls 
-  checkBluetooth(moisture, humidity, temperature);  // Bluetooth Controls
-  checkPump(moisture, dry, pump);                   // Water Pump Controls
-  checkFan(temperature, hot, fans);                 // Fan Controls
+  checkBluetooth(moisture, humidity, temperature);          // Bluetooth Controls
+  checkPump(moisture, dry, pump);                           // Water Pump Controls
+  checkFan(temperature, hot, cold, coolingFan, heatingFan); // Fan Controls
 }
 
 // Bluetooth Function
@@ -73,17 +76,13 @@ void checkBluetooth(int moisture, int humidity, int temperature)
 }
 
 // Pump Function
-void checkPump(int moisture, int dry, int pump)
+void checkPump(int moisture, int dry, const int pump)
 {
   if (moisture >= dry)
   {
-    while (true)
-    {
-      // Turn on the Pump
-      RGB_color(255, 0, 0); // Red
-      digitalWrite(pump, LOW);
-      break;
-    }
+    // Turn on the Pump
+    RGB_color(255, 0, 0); // Red
+    digitalWrite(pump, LOW);
   }
   else
   {
@@ -93,22 +92,25 @@ void checkPump(int moisture, int dry, int pump)
 }
 
 // Fan Function
-void checkFan(int temperature, int hot, int fans)
+void checkFan(int temperature, int hot, int cold, const int coolingFan, const int heatingFan)
 {
   if (temperature >= hot)
   {
-    while (temperature >= hot)
-    {
-      // Turn on the Fans
-      RGB_color(255, 0, 0); // Red
-      digitalWrite(fans, HIGH);
-      break;
-    }
+    // Turn on the Cooling Fan
+    RGB_color(255, 0, 0); // Red
+    digitalWrite(coolingFan, HIGH);
+  }
+  else if (temperature <= cold)
+  {
+    // Turn on the Heating Fan
+    RGB_color(255, 0, 0); // Red
+    digitalWrite(heatingFan, HIGH);
   }
   else
   {
     RGB_color(0, 255, 0); // Green
-    digitalWrite(fans, LOW);
+    digitalWrite(coolingFan, LOW);
+    digitalWrite(heatingFan, LOW);
   }
 }
 
