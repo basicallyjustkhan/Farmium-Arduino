@@ -1,7 +1,7 @@
 #include "DHT.h"            // DHT Library (Adafruit)
-#include <SoftwareSerial.h> // Bluetooth Module Library
+#include <SoftwareSerial.h> // Bluetooth Module HM10
 
-SoftwareSerial bluetooth(1, 0); // Rx, Tx Pins
+SoftwareSerial bluetooth(1, 0); // Rx, Tx Pins (Rx - Rx; Tx - Tx)
 
 const int   dry = 1000.00;  // If the soil is dryer (>=) than this number
 const float cold = 24.00;   // If the soil is colder (<=) than this number
