@@ -1,80 +1,81 @@
-#include "DHT.h"
-#include <SoftwareSerial.h>
+#include "DHT.h"            // DHT Library (Adafruit)
+#include <SoftwareSerial.h> // Bluetooth Module Library
 
-SoftwareSerial bluetooth(1, 0); // Rx, Tx
+SoftwareSerial bluetooth(1, 0); // Rx, Tx Pins
 
-const int   dry = 1000.00;         // if the soil is dryer than this number, then start watering
-const float hot = 25.50;           // if the soil is hotter than this number, then start the fan
+const int   dry = 1000.00;  // If the soil is dryer than this number
+const float hot = 25.50;    // If the soil is hotter than this number
 
-const int red_light   = 8;
-const int green_light = 7;
-const int blue_light  = 6;
+const int red_light   = 8;  // R Pin
+const int green_light = 7;  // G Pin
+const int blue_light  = 6;  // B Pin
 
-int bluetoothLogic = 0;
-const int soilSensor = 13;
-const int buzzer = 12;
-const int fans = 11;
-const int pump = A0;
-#define dht22 A1
+const int fc28 = 13;        // FC-28 Pin (Soil Sensor)
+const int buzzer = 12;      // Buzzer Pin
+const int fans = 11;        // Fans Pin
+const int pump = A0;        // Water Pump Pin
+#define dht22 A1            // DHT22 Pin (Temp Sensor)
 
-#define DHTTYPE DHT22 
-DHT dht(dht22, DHTTYPE);
+#define DHTTYPE DHT22       // Defining the type of the sensor
+DHT dht(dht22, DHTTYPE);    // Letting the library know
 
 
 void setup() 
 {
+  // Setting the Pin modes
   pinMode(red_light, OUTPUT);
   pinMode(green_light, OUTPUT);
   pinMode(blue_light, OUTPUT);
   pinMode(pump, OUTPUT);
   pinMode(fans, OUTPUT);
   pinMode(buzzer, OUTPUT);
-  pinMode(soilSensor, INPUT);
+  pinMode(fc28, INPUT);
   pinMode(dht22, INPUT);
   
-
-  digitalWrite(pump, HIGH);
+  // Setting Initial Values
+  digitalWrite(pump, HIGH); // Relay
   RGB_color(255, 255, 255); // White
-  bluetooth.begin(9600);
-  dht.begin();
   
+  // Connection Parameters
+  bluetooth.begin(9600);                    // CMD Language
+  bluetooth.println("Started!");            // For Tester Usage
+  bluetooth.println("AT+NAME=FarmiumMini"); // Naming the Bluetooth
+  bluetooth.println("AT+PSWD=1092");        // Any 4 Digit Password
+  dht.begin();
+
+  // Buzzer Start-Up Noise
   digitalWrite(buzzer, HIGH);
-  delay(150);
-  digitalWrite(buzzer, LOW);
-
-  //bluetooth.println("Started!");
-
-  //bluetooth.println("AT+NAME=FarmiumMiniPrototype");
-  //bluetooth.println("AT+PSWD=1092");
+  delay(150);                               // Beep Length (ms)
+  digitalWrite(buzzer, LOW); 
 }
 
 void loop() 
 {
   // Get Data
-  float moisture = 100-((analogRead(soilSensor))/10);
-  float humidity = dht.readHumidity();
-  int temperature = dht.readTemperature();
-  float hic = dht.computeHeatIndex(temperature, humidity, false);
-  delay(1000);
+  float moisture = 100-((analogRead(fc28))/10); // Moisture Readings
+  float humidity = dht.readHumidity();          // Humidity Readings
+  int temperature = dht.readTemperature();      // Temperature Readings
+  float hic = dht.computeHeatIndex(temperature, humidity, false); // Heat Index Readings
+  delay(1000);  // Delay between readings due to the Bluetooth Module
   
-  // Bluetooth 
-  checkBluetooth(moisture, humidity, temperature);
-
-  // Plant Controls
-  checkPump(moisture, dry, pump);
-  checkFan(temperature, hot, fans);
+  // Controls 
+  checkBluetooth(moisture, humidity, temperature);  // Bluetooth Controls
+  checkPump(moisture, dry, pump);                   // Water Pump Controls
+  checkFan(temperature, hot, fans);                 // Fan Controls
 }
 
-void checkBluetooth(int moisture, int humidity, int temperature) // Bluetooth
+// Bluetooth Function
+void checkBluetooth(int moisture, int humidity, int temperature)
 {
   bluetooth.println(moisture);
   bluetooth.println(humidity);
   bluetooth.println(temperature);
 }
 
-void checkPump(int moisture, int dry, int pump) // Pump controls
+// Pump Function
+void checkPump(int moisture, int dry, int pump)
 {
-  if (moisture >= dry or bluetoothLogic == 1) // 0-off; 1-on
+  if (moisture >= dry)
   {
     while (true)
     {
@@ -91,13 +92,14 @@ void checkPump(int moisture, int dry, int pump) // Pump controls
   }
 }
 
-void checkFan(int temperature, int hot, int fans) // Fan controls
+// Fan Function
+void checkFan(int temperature, int hot, int fans)
 {
-  if (temperature >= hot or bluetoothLogic == 2) // 0-off; 2-on
+  if (temperature >= hot)
   {
     while (temperature >= hot)
     {
-      // the plant is too hot
+      // Turn on the 
       RGB_color(255, 0, 0); // Red
       digitalWrite(fans, HIGH);
       break;
@@ -110,6 +112,7 @@ void checkFan(int temperature, int hot, int fans) // Fan controls
   }
 }
 
+// RGB Function
 void RGB_color(int red_light_value, int green_light_value, int blue_light_value)
  {
   analogWrite(red_light, red_light_value);
